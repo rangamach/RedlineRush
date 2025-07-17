@@ -1,0 +1,204 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class PlayerView1 : MonoBehaviour
+{
+    private PlayerController playerController;
+    private Rigidbody rb;
+    private Vector2 currentMovementvector;
+    private float slipAngle;
+    private float brakeInput;
+
+    [Header("Car")]
+    [SerializeField] private float slipAllowance = 0.5f;
+    [SerializeField] private float minSpeedToSmoke = 1f;
+    [SerializeField] private float speed;
+    [SerializeField] private float brake;
+    [SerializeField] private WheelColliders colliders;
+    [SerializeField] private WheelTransforms transforms;
+    [SerializeField] private WheelParticles particles;
+    [SerializeField] private ParticleSystem smokeParticlePrefab;
+    [SerializeField] private AnimationCurve steeringCurve;
+
+    [Header("Camera")]
+    [SerializeField] private Camera mainCamera;
+    [SerializeField] private Vector3 cameraOffset;
+    [SerializeField] private float cameraSpeed;
+
+    private CarDrive carDrive;
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+        carDrive = new CarDrive();
+
+        InstantiateSmoke();
+
+        SubscribeInvokeInputs();
+    }
+    private void SubscribeInvokeInputs()
+    {
+        carDrive.Movement.Driving.performed += OnMovePerformed;
+        carDrive.Movement.Driving.canceled += OnMoveCancelled;
+    }
+    private void OnEnable() => carDrive.Movement.Enable();
+    private void OnDestroy() => carDrive.Movement.Disable();
+    private void Start()
+    {
+        currentMovementvector = Vector2.zero;
+        rb = GetComponent<Rigidbody>();
+    }
+    private void Update()
+    {
+        CheckInput();
+
+        ApplyGas();
+        ApplySteering();
+        ApplyBrake();
+        CheckParticles();
+        ApplyWheelMovement();
+    }
+    private void LateUpdate()
+    {
+        CameraHandler();
+    }
+    private void InstantiateSmoke()
+    {
+        particles = new WheelParticles();
+
+        particles.FRParticle = Instantiate(smokeParticlePrefab, colliders.FRWheelCollider.transform.position - Vector3.up * colliders.FRWheelCollider.radius, Quaternion.Euler(180f, 0f, 0f), colliders.FRWheelCollider.transform).GetComponent<ParticleSystem>();
+        particles.FLParticle = Instantiate(smokeParticlePrefab, colliders.FLWheelCollider.transform.position - Vector3.up * colliders.FLWheelCollider.radius, Quaternion.Euler(180f, 0f, 0f), colliders.FLWheelCollider.transform).GetComponent<ParticleSystem>();
+        particles.RRParticle = Instantiate(smokeParticlePrefab, colliders.RRWheelCollider.transform.position - Vector3.up * colliders.RRWheelCollider.radius, Quaternion.Euler(180f, 0f, 0f), colliders.RRWheelCollider.transform).GetComponent<ParticleSystem>();
+        particles.RLParticle = Instantiate(smokeParticlePrefab, colliders.RLWheelCollider.transform.position - Vector3.up * colliders.RLWheelCollider.radius, Quaternion.Euler(180f, 0f, 0f), colliders.RLWheelCollider.transform).GetComponent<ParticleSystem>();
+    }
+    private void CheckParticles()
+    {
+        WheelHit[] wheelHits = new WheelHit[4];
+        bool[] Grounded = new bool[4];
+
+        Grounded[0] = colliders.FRWheelCollider.GetGroundHit(out wheelHits[0]);
+        Grounded[1] = colliders.FLWheelCollider.GetGroundHit(out wheelHits[1]);
+        Grounded[2] = colliders.RRWheelCollider.GetGroundHit(out wheelHits[2]);
+        Grounded[3] = colliders.RLWheelCollider.GetGroundHit(out wheelHits[3]);
+
+        float carSpeed = rb.linearVelocity.magnitude;
+
+        HandleSmokeParticles(Grounded[0], wheelHits[0], particles.FRParticle, carSpeed);
+        HandleSmokeParticles(Grounded[1], wheelHits[1], particles.FLParticle, carSpeed);
+        HandleSmokeParticles(Grounded[2], wheelHits[2], particles.RRParticle, carSpeed);
+        HandleSmokeParticles(Grounded[3], wheelHits[3], particles.RLParticle, carSpeed);
+    }
+
+    private void HandleSmokeParticles(bool isGrounded, WheelHit hit, ParticleSystem particle, float speed)
+    {
+        float slip = Mathf.Abs(hit.sidewaysSlip) + Mathf.Abs(hit.forwardSlip);
+
+        if (isGrounded && (slip > slipAllowance || speed > minSpeedToSmoke))
+        {
+            if (!particle.isPlaying)
+            {
+                particle.Play();
+            }
+        }
+        else
+        {
+            if (particle.isPlaying)
+            {
+                particle.Stop();
+            }
+        }
+    }
+    private void ApplyWheelMovement()
+    {
+        UpdateWheels(colliders.FRWheelCollider, transforms.FRTransform);
+        UpdateWheels(colliders.FLWheelCollider, transforms.FLTransform);
+        UpdateWheels(colliders.RRWheelCollider, transforms.RRTransform);
+        UpdateWheels(colliders.RLWheelCollider, transforms.RLTransform);
+    }
+    private void OnMovePerformed(InputAction.CallbackContext ctx) => currentMovementvector = ctx.ReadValue<Vector2>();
+    private void OnMoveCancelled(InputAction.CallbackContext ctx) => currentMovementvector = Vector2.zero;
+    private void CheckInput()
+    {
+        float slipAngle = Vector3.Angle(transform.forward, rb.linearVelocity - transform.forward);
+
+        if (slipAngle < 120f)
+        {
+            if (currentMovementvector.y < 0)
+            {
+                brakeInput = Mathf.Abs(currentMovementvector.y);
+            }
+        }
+        else
+            brakeInput = 0;
+    }
+
+    private void ApplyGas()
+    {
+        colliders.RRWheelCollider.motorTorque = speed * currentMovementvector.y;
+        colliders.RLWheelCollider.motorTorque = speed * currentMovementvector.y;
+    }
+
+    private void ApplyBrake()
+    {
+        float frontBrake = brakeInput * brake * 0.7f;
+        float rearBrake = brakeInput * brake * 0.3f;
+
+        colliders.FRWheelCollider.brakeTorque = frontBrake;
+        colliders.FLWheelCollider.brakeTorque = frontBrake;
+        colliders.RLWheelCollider.brakeTorque = rearBrake;
+        colliders.RRWheelCollider.brakeTorque = rearBrake;
+    }
+
+    private void ApplySteering()
+    {
+        float steeringAngle = currentMovementvector.x * steeringCurve.Evaluate(rb.linearVelocity.magnitude);
+
+        steeringAngle += Vector3.SignedAngle(transform.forward, rb.linearVelocity + transform.forward, Vector3.up);
+        steeringAngle = Mathf.Clamp(steeringAngle, -90f, 90f);
+
+        colliders.FRWheelCollider.steerAngle = steeringAngle;
+        colliders.FLWheelCollider.steerAngle = steeringAngle;
+    }
+    private void UpdateWheels(WheelCollider wheelCollider, Transform wheelTransform)
+    {
+        Quaternion collider_quaternion;
+        Vector3 collider_position;
+
+        wheelCollider.GetWorldPose(out collider_position, out collider_quaternion);
+
+        wheelTransform.position = collider_position;
+        wheelTransform.rotation = collider_quaternion;
+    }
+
+    private void CameraHandler()
+    {
+        Vector3 playerForward = (rb.linearVelocity + transform.forward).normalized;
+
+        mainCamera.transform.position = Vector3.Lerp(mainCamera.transform.position, transform.position + transform.TransformVector(cameraOffset) + playerForward * (-5f), cameraSpeed * Time.deltaTime);
+        mainCamera.transform.LookAt(this.transform);
+    }
+    public void SetController(PlayerController playerController) => this.playerController = playerController;
+}
+[System.Serializable]
+public class WheelColliders
+{
+    public WheelCollider FRWheelCollider;
+    public WheelCollider FLWheelCollider;
+    public WheelCollider RRWheelCollider;
+    public WheelCollider RLWheelCollider;
+}
+[System.Serializable]
+public class WheelTransforms
+{
+    public Transform FRTransform;
+    public Transform FLTransform;
+    public Transform RRTransform;
+    public Transform RLTransform;
+}
+public class WheelParticles
+{
+    public ParticleSystem FRParticle;
+    public ParticleSystem FLParticle;
+    public ParticleSystem RRParticle;
+    public ParticleSystem RLParticle;
+}
