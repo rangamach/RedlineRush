@@ -4,4 +4,7 @@ using UnityEngine;
 public class PlayerSO : ScriptableObject
 {
     public PlayerView1 PlayerView;
+    public Vector3 positon;
+    public Vector3 rotation;
+    public Vector3 scale;
 }

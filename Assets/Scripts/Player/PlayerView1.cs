@@ -19,6 +19,7 @@ public class PlayerView1 : MonoBehaviour
     [SerializeField] private WheelParticles particles;
     [SerializeField] private ParticleSystem smokeParticlePrefab;
     [SerializeField] private AnimationCurve steeringCurve;
+    [SerializeField] private float wheelRotationSpeed;
 
     [Header("Camera")]
     [SerializeField] private Camera mainCamera;
@@ -35,6 +36,15 @@ public class PlayerView1 : MonoBehaviour
         InstantiateSmoke();
 
         SubscribeInvokeInputs();
+    }
+    public PlayerView1 Spawn(Vector3 position, Vector3 rotation, Vector3 scale)
+    {
+        GameObject view = Instantiate(this.gameObject, position,Quaternion.Euler(rotation));
+        view.transform.localScale = scale;
+
+        var playerView = view.GetComponent<PlayerView1>();
+
+        return playerView;
     }
     private void SubscribeInvokeInputs()
     {
@@ -66,10 +76,10 @@ public class PlayerView1 : MonoBehaviour
     {
         particles = new WheelParticles();
 
-        particles.FRParticle = Instantiate(smokeParticlePrefab, colliders.FRWheelCollider.transform.position - Vector3.up * colliders.FRWheelCollider.radius, Quaternion.Euler(180f, 0f, 0f), colliders.FRWheelCollider.transform).GetComponent<ParticleSystem>();
-        particles.FLParticle = Instantiate(smokeParticlePrefab, colliders.FLWheelCollider.transform.position - Vector3.up * colliders.FLWheelCollider.radius, Quaternion.Euler(180f, 0f, 0f), colliders.FLWheelCollider.transform).GetComponent<ParticleSystem>();
-        particles.RRParticle = Instantiate(smokeParticlePrefab, colliders.RRWheelCollider.transform.position - Vector3.up * colliders.RRWheelCollider.radius, Quaternion.Euler(180f, 0f, 0f), colliders.RRWheelCollider.transform).GetComponent<ParticleSystem>();
-        particles.RLParticle = Instantiate(smokeParticlePrefab, colliders.RLWheelCollider.transform.position - Vector3.up * colliders.RLWheelCollider.radius, Quaternion.Euler(180f, 0f, 0f), colliders.RLWheelCollider.transform).GetComponent<ParticleSystem>();
+        particles.FRParticle = Instantiate(smokeParticlePrefab, colliders.FRWheelCollider.transform.position - Vector3.up * colliders.FRWheelCollider.radius + new Vector3(-0.15f,0,0), Quaternion.Euler(180f, 0f, 0f), colliders.FRWheelCollider.transform).GetComponent<ParticleSystem>();
+        particles.FLParticle = Instantiate(smokeParticlePrefab, colliders.FLWheelCollider.transform.position - Vector3.up * colliders.FLWheelCollider.radius + new Vector3(0.2f, 0, 0), Quaternion.Euler(180f, 0f, 0f), colliders.FLWheelCollider.transform).GetComponent<ParticleSystem>();
+        particles.RRParticle = Instantiate(smokeParticlePrefab, colliders.RRWheelCollider.transform.position - Vector3.up * colliders.RRWheelCollider.radius + new Vector3(-0.12f, 0, 0), Quaternion.Euler(180f, 0f, 0f), colliders.RRWheelCollider.transform).GetComponent<ParticleSystem>();
+        particles.RLParticle = Instantiate(smokeParticlePrefab, colliders.RLWheelCollider.transform.position - Vector3.up * colliders.RLWheelCollider.radius + new Vector3(0.1f, 0, 0), Quaternion.Euler(180f, 0f, 0f), colliders.RLWheelCollider.transform).GetComponent<ParticleSystem>();
     }
     private void CheckParticles()
     {
@@ -151,9 +161,17 @@ public class PlayerView1 : MonoBehaviour
 
     private void ApplySteering()
     {
+        Vector3 localVelocity = transform.InverseTransformDirection(rb.linearVelocity);
+        bool isReversing = localVelocity.z < -0.1;
+
         float steeringAngle = currentMovementvector.x * steeringCurve.Evaluate(rb.linearVelocity.magnitude);
 
-        steeringAngle += Vector3.SignedAngle(transform.forward, rb.linearVelocity + transform.forward, Vector3.up);
+        Vector3 velocityForSteering = rb.linearVelocity;
+
+        if(isReversing)
+            velocityForSteering = -rb.linearVelocity;
+
+        steeringAngle += Vector3.SignedAngle(transform.forward, velocityForSteering + transform.forward, Vector3.up);
         steeringAngle = Mathf.Clamp(steeringAngle, -90f, 90f);
 
         colliders.FRWheelCollider.steerAngle = steeringAngle;
@@ -167,7 +185,7 @@ public class PlayerView1 : MonoBehaviour
         wheelCollider.GetWorldPose(out collider_position, out collider_quaternion);
 
         wheelTransform.position = collider_position;
-        wheelTransform.rotation = collider_quaternion;
+        wheelTransform.rotation = Quaternion.Slerp(wheelTransform.rotation, collider_quaternion, wheelRotationSpeed * Time.deltaTime);
     }
 
     private void CameraHandler()
@@ -178,6 +196,7 @@ public class PlayerView1 : MonoBehaviour
         mainCamera.transform.LookAt(this.transform);
     }
     public void SetController(PlayerController playerController) => this.playerController = playerController;
+    public void SetCamera() => this.mainCamera = Camera.main;
 }
 [System.Serializable]
 public class WheelColliders
