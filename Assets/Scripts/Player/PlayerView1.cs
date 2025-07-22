@@ -196,7 +196,16 @@ public class PlayerView1 : MonoBehaviour
         mainCamera.transform.LookAt(this.transform);
     }
     public void SetController(PlayerController playerController) => this.playerController = playerController;
-    public void SetCamera() => this.mainCamera = Camera.main;
+    public void SetCamera()
+    {
+        this.mainCamera = new GameObject("MainCamera").AddComponent<Camera>();
+        this.mainCamera.gameObject.AddComponent<AudioListener>();
+        this.mainCamera.tag = "MainCamera";
+        this.mainCamera.fieldOfView = 60;
+        this.mainCamera.nearClipPlane = 0.1f;
+        this.mainCamera.farClipPlane = 5000f;
+        this.mainCamera.clearFlags = CameraClearFlags.Skybox;
+    }
 }
 [System.Serializable]
 public class WheelColliders
