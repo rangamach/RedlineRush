@@ -549,7 +549,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   wheelRotationSpeed: 10
-  tiltSpeed: 5
+  tiltSpeed: 10
   cameraPositionOffset: {x: 0, y: 2, z: -5}
   cameraMoveSmoothness: 10
   cameraRotationSmoothness: 10

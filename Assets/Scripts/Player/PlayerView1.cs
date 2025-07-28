@@ -214,8 +214,18 @@ public class PlayerView1 : MonoBehaviour
 
         rotation = Quaternion.LookRotation(direction + cameraRotationOffset,Vector3.up);
 
-        mainCamera.transform.rotation = Quaternion.Lerp(mainCamera.transform.rotation, rotation, cameraRotationSmoothness * Time.deltaTime);
+        Quaternion finalRotation = rotation * CameraTilt();
 
+        mainCamera.transform.rotation = Quaternion.Lerp(mainCamera.transform.rotation, finalRotation, cameraRotationSmoothness * Time.deltaTime);
+
+    }
+    private Quaternion CameraTilt()
+    {
+        float targetTilt = -currentMovementvector.x * tiltSpeed;
+        currentTilt = Mathf.Lerp(currentTilt,targetTilt,Time.deltaTime * cameraRotationSmoothness);
+        Quaternion tiltRotation = Quaternion.Euler(0f, 0f, currentTilt);
+
+        return tiltRotation;
     }
     public void SetController(PlayerController playerController) => this.playerController = playerController;
     private void SetCamera()
