@@ -554,6 +554,7 @@ MonoBehaviour:
   cameraMoveSmoothness: 10
   cameraRotationSmoothness: 10
   cameraRotationOffset: {x: 0, y: 1.5, z: 0}
+  shakeMagnitude: 1
 --- !u!1 &1196237764194268568
 GameObject:
   m_ObjectHideFlags: 0

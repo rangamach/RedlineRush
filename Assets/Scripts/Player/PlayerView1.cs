@@ -19,7 +19,6 @@ public class PlayerView1 : MonoBehaviour
     private Vector2 currentMovementvector;
     private float slipAngle;
     private float brakeInput;
-    private Vector3 originalCameraPosition;
 
     [Header("Camera")]
     [SerializeField] private float tiltSpeed;
@@ -29,8 +28,9 @@ public class PlayerView1 : MonoBehaviour
     [SerializeField] private Vector3 cameraRotationOffset;
     private Camera mainCamera;
     private float shakeDuration = 0f;
-    private float shakeMagnitude;
+    [SerializeField] private float shakeMagnitude;
     private float currentTilt = 0f;
+    private Vector3 currentCameraVelocity;
 
     //InputAction
     private CarDrive carDrive;
@@ -79,6 +79,15 @@ public class PlayerView1 : MonoBehaviour
     private void FixedUpdate()
     {
         CameraFollowCar();
+    }
+    private void OnCollisionEnter(Collision collision)
+    {
+        float impactForce = collision.relativeVelocity.magnitude;
+
+        if(impactForce > 5f)
+        {
+            shakeDuration = 0.5f;
+        }
     }
     private void InstantiateSmoke()
     {
@@ -205,7 +214,19 @@ public class PlayerView1 : MonoBehaviour
         Vector3 targetPosition = new Vector3();
         targetPosition = transform.TransformPoint(cameraPositionOffset);
 
-        mainCamera.transform.position = Vector3.Lerp(mainCamera.transform.position,targetPosition,cameraMoveSmoothness * Time.deltaTime);
+        if (shakeDuration > 0)
+        {
+            targetPosition = CameraShake(targetPosition);
+        }
+
+        mainCamera.transform.position = Vector3.SmoothDamp(mainCamera.transform.position, targetPosition, ref currentCameraVelocity, 1f/cameraMoveSmoothness);
+
+       // mainCamera.transform.position = Vector3.Lerp(mainCamera.transform.position,targetPosition,cameraMoveSmoothness * Time.deltaTime);
+    }
+    private Vector3 CameraShake(Vector3 targetPosition)
+    {
+        shakeDuration -= Time.deltaTime;
+        return targetPosition += Random.insideUnitSphere * shakeMagnitude;
     }
     private void CameraRotationUpdate()
     {
@@ -250,8 +271,6 @@ public class PlayerView1 : MonoBehaviour
         Vector3 direction = transform.position - startPos;
         Quaternion startRot = Quaternion.LookRotation(direction + cameraRotationOffset, Vector3.up);
         mainCamera.transform.rotation = startRot;
-
-        originalCameraPosition = mainCamera.transform.localPosition;
     }
 }
 [System.Serializable]
