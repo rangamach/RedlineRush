@@ -7,4 +7,5 @@ public class PlayerSO : ScriptableObject
     public Vector3 positon;
     public Vector3 rotation;
     public Vector3 scale;
+    public float MaxHealth;
 }

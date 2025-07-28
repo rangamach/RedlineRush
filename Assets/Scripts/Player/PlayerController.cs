@@ -6,9 +6,9 @@ public class PlayerController
     public PlayerModel PlayerModel { get; private set; }
     public PlayerController(PlayerSO playerSO)
     {
+        PlayerModel = new PlayerModel(this, playerSO);
         PlayerView = playerSO.PlayerView.Spawn(playerSO.positon,playerSO.rotation,playerSO.scale);
+
         PlayerView.SetController(this);
-        PlayerView.SetCamera();
-        PlayerModel = new PlayerModel(this);
     }
 }

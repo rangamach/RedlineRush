@@ -3,12 +3,6 @@ using UnityEngine.InputSystem;
 
 public class PlayerView1 : MonoBehaviour
 {
-    private PlayerController playerController;
-    private Rigidbody rb;
-    private Vector2 currentMovementvector;
-    private float slipAngle;
-    private float brakeInput;
-
     [Header("Car")]
     [SerializeField] private float slipAllowance = 0.5f;
     [SerializeField] private float minSpeedToSmoke = 1f;
@@ -20,12 +14,25 @@ public class PlayerView1 : MonoBehaviour
     [SerializeField] private ParticleSystem smokeParticlePrefab;
     [SerializeField] private AnimationCurve steeringCurve;
     [SerializeField] private float wheelRotationSpeed;
+    private PlayerController playerController;
+    private Rigidbody rb;
+    private Vector2 currentMovementvector;
+    private float slipAngle;
+    private float brakeInput;
+    private Vector3 originalCameraPosition;
 
     [Header("Camera")]
-    [SerializeField] private Camera mainCamera;
-    [SerializeField] private Vector3 cameraOffset;
-    [SerializeField] private float cameraSpeed;
+    [SerializeField] private float tiltSpeed;
+    [SerializeField] private Vector3 cameraPositionOffset;
+    [SerializeField] private float cameraMoveSmoothness;
+    [SerializeField] private float cameraRotationSmoothness;
+    [SerializeField] private Vector3 cameraRotationOffset;
+    private Camera mainCamera;
+    private float shakeDuration = 0f;
+    private float shakeMagnitude;
+    private float currentTilt = 0f;
 
+    //InputAction
     private CarDrive carDrive;
 
     private void Awake()
@@ -33,6 +40,7 @@ public class PlayerView1 : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         carDrive = new CarDrive();
 
+        SetCamera();
         InstantiateSmoke();
 
         SubscribeInvokeInputs();
@@ -68,9 +76,9 @@ public class PlayerView1 : MonoBehaviour
         CheckParticles();
         ApplyWheelMovement();
     }
-    private void LateUpdate()
+    private void FixedUpdate()
     {
-        CameraHandler();
+        CameraFollowCar();
     }
     private void InstantiateSmoke()
     {
@@ -187,16 +195,30 @@ public class PlayerView1 : MonoBehaviour
         wheelTransform.position = collider_position;
         wheelTransform.rotation = Quaternion.Slerp(wheelTransform.rotation, collider_quaternion, wheelRotationSpeed * Time.deltaTime);
     }
-
-    private void CameraHandler()
+    private void CameraFollowCar()
     {
-        Vector3 playerForward = (rb.linearVelocity + transform.forward).normalized;
+        CameraMovementUpdate();
+        CameraRotationUpdate();
+    }
+    private void CameraMovementUpdate()
+    {
+        Vector3 targetPosition = new Vector3();
+        targetPosition = transform.TransformPoint(cameraPositionOffset);
 
-        mainCamera.transform.position = Vector3.Lerp(mainCamera.transform.position, transform.position + transform.TransformVector(cameraOffset) + playerForward * (-5f), cameraSpeed * Time.deltaTime);
-        mainCamera.transform.LookAt(this.transform);
+        mainCamera.transform.position = Vector3.Lerp(mainCamera.transform.position,targetPosition,cameraMoveSmoothness * Time.deltaTime);
+    }
+    private void CameraRotationUpdate()
+    {
+        var direction = transform.position - mainCamera.transform.position;
+        var rotation = new Quaternion();
+
+        rotation = Quaternion.LookRotation(direction + cameraRotationOffset,Vector3.up);
+
+        mainCamera.transform.rotation = Quaternion.Lerp(mainCamera.transform.rotation, rotation, cameraRotationSmoothness * Time.deltaTime);
+
     }
     public void SetController(PlayerController playerController) => this.playerController = playerController;
-    public void SetCamera()
+    private void SetCamera()
     {
         this.mainCamera = new GameObject("MainCamera").AddComponent<Camera>();
         this.mainCamera.gameObject.AddComponent<AudioListener>();
@@ -205,6 +227,21 @@ public class PlayerView1 : MonoBehaviour
         this.mainCamera.nearClipPlane = 0.1f;
         this.mainCamera.farClipPlane = 5000f;
         this.mainCamera.clearFlags = CameraClearFlags.Skybox;
+
+        SetCameraInitialTransform();
+    }
+    private void SetCameraInitialTransform()
+    {
+        //Initial Position
+        Vector3 startPos = transform.TransformPoint(cameraPositionOffset);
+        mainCamera.transform.position = startPos;
+
+        //Initial Rotation
+        Vector3 direction = transform.position - startPos;
+        Quaternion startRot = Quaternion.LookRotation(direction + cameraRotationOffset, Vector3.up);
+        mainCamera.transform.rotation = startRot;
+
+        originalCameraPosition = mainCamera.transform.localPosition;
     }
 }
 [System.Serializable]

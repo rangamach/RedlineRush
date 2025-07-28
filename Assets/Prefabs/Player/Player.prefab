@@ -549,9 +549,11 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   wheelRotationSpeed: 10
-  mainCamera: {fileID: 0}
-  cameraOffset: {x: 0, y: 2, z: 0}
-  cameraSpeed: 100
+  tiltSpeed: 5
+  cameraPositionOffset: {x: 0, y: 2, z: -5}
+  cameraMoveSmoothness: 10
+  cameraRotationSmoothness: 10
+  cameraRotationOffset: {x: 0, y: 1.5, z: 0}
 --- !u!1 &1196237764194268568
 GameObject:
   m_ObjectHideFlags: 0
