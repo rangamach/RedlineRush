@@ -7,4 +7,7 @@ public class PlayerService
     {
         PlayerController = new PlayerController(playerSO);
     }
+    public float GetCurrentHealth() => PlayerController.GetCurrentHealth();
+    public void TogglePlayerView(bool active) => PlayerController.TogglePlayerView(active);
+    public void ResetPlayer() => PlayerController.ResetPlayer();
 }

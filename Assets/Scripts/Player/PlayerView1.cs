@@ -3,6 +3,10 @@ using UnityEngine.InputSystem;
 
 public class PlayerView1 : MonoBehaviour
 {
+    private Vector3 initialPosition;
+    private Quaternion initialRotation;
+    private Vector3 initialScale;
+
     [Header("Car")]
     [SerializeField] private float slipAllowance = 0.5f;
     [SerializeField] private float minSpeedToSmoke = 1f;
@@ -37,6 +41,10 @@ public class PlayerView1 : MonoBehaviour
 
     private void Awake()
     {
+        initialPosition = transform.position;
+        initialRotation = transform.rotation;
+        initialScale = transform.localScale;
+
         rb = GetComponent<Rigidbody>();
         carDrive = new CarDrive();
 
@@ -87,7 +95,29 @@ public class PlayerView1 : MonoBehaviour
         if(impactForce > 5f)
         {
             shakeDuration = 0.5f;
+            playerController.TakeDamage(20);
+
+            InstantGripRecovery();
         }
+    }
+    private void InstantGripRecovery()
+    {
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+
+        colliders.FRWheelCollider.brakeTorque = brake * 2f;
+        colliders.FLWheelCollider.brakeTorque = brake * 2f;
+        colliders.RRWheelCollider.brakeTorque = brake * 2f;
+        colliders.RLWheelCollider.brakeTorque = brake * 2f;
+
+        Invoke(nameof(ReleaseBrakes),0.1f);
+    }
+    private void ReleaseBrakes()
+    {
+        colliders.FRWheelCollider.brakeTorque = 0;
+        colliders.FLWheelCollider.brakeTorque = 0;
+        colliders.RRWheelCollider.brakeTorque = 0;
+        colliders.RLWheelCollider.brakeTorque = 0;
     }
     private void InstantiateSmoke()
     {
@@ -220,8 +250,6 @@ public class PlayerView1 : MonoBehaviour
         }
 
         mainCamera.transform.position = Vector3.SmoothDamp(mainCamera.transform.position, targetPosition, ref currentCameraVelocity, 1f/cameraMoveSmoothness);
-
-       // mainCamera.transform.position = Vector3.Lerp(mainCamera.transform.position,targetPosition,cameraMoveSmoothness * Time.deltaTime);
     }
     private Vector3 CameraShake(Vector3 targetPosition)
     {
@@ -251,13 +279,16 @@ public class PlayerView1 : MonoBehaviour
     public void SetController(PlayerController playerController) => this.playerController = playerController;
     private void SetCamera()
     {
-        this.mainCamera = new GameObject("MainCamera").AddComponent<Camera>();
-        this.mainCamera.gameObject.AddComponent<AudioListener>();
-        this.mainCamera.tag = "MainCamera";
-        this.mainCamera.fieldOfView = 60;
-        this.mainCamera.nearClipPlane = 0.1f;
-        this.mainCamera.farClipPlane = 5000f;
-        this.mainCamera.clearFlags = CameraClearFlags.Skybox;
+        if (this.mainCamera == null)
+        {
+            this.mainCamera = new GameObject("MainCamera").AddComponent<Camera>();
+            this.mainCamera.gameObject.AddComponent<AudioListener>();
+            this.mainCamera.tag = "MainCamera";
+            this.mainCamera.fieldOfView = 60;
+            this.mainCamera.nearClipPlane = 0.1f;
+            this.mainCamera.farClipPlane = 5000f;
+            this.mainCamera.clearFlags = CameraClearFlags.Skybox;
+        }
 
         SetCameraInitialTransform();
     }
@@ -271,6 +302,21 @@ public class PlayerView1 : MonoBehaviour
         Vector3 direction = transform.position - startPos;
         Quaternion startRot = Quaternion.LookRotation(direction + cameraRotationOffset, Vector3.up);
         mainCamera.transform.rotation = startRot;
+    }
+    public void PlayerDied()
+    {
+        transform.GetChild(0).gameObject.SetActive(false);
+    }
+    public void ResetPlayer()
+    {
+        ResetTransform();
+        transform.GetChild(0).gameObject.SetActive(true);
+    }
+    private void ResetTransform()
+    {
+        transform.position = initialPosition;
+        transform.rotation = initialRotation;
+        transform.localScale = initialScale;
     }
 }
 [System.Serializable]
