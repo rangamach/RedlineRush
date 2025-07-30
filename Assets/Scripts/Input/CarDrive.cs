@@ -158,6 +158,34 @@ public partial class @CarDrive: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": true
                 }
             ]
+        },
+        {
+            ""name"": ""GameAction"",
+            ""id"": ""399e0cf2-9396-4bdd-bd2d-826d57ccc717"",
+            ""actions"": [
+                {
+                    ""name"": ""Pause"",
+                    ""type"": ""Button"",
+                    ""id"": ""6302e300-c07f-410e-b61a-4444d7afa967"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""8afa905b-3cd2-4e56-8ca1-8b7caa9a7dc2"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Pause"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": []
@@ -165,11 +193,15 @@ public partial class @CarDrive: IInputActionCollection2, IDisposable
         // Movement
         m_Movement = asset.FindActionMap("Movement", throwIfNotFound: true);
         m_Movement_Driving = m_Movement.FindAction("Driving", throwIfNotFound: true);
+        // GameAction
+        m_GameAction = asset.FindActionMap("GameAction", throwIfNotFound: true);
+        m_GameAction_Pause = m_GameAction.FindAction("Pause", throwIfNotFound: true);
     }
 
     ~@CarDrive()
     {
         UnityEngine.Debug.Assert(!m_Movement.enabled, "This will cause a leak and performance issues, CarDrive.Movement.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_GameAction.enabled, "This will cause a leak and performance issues, CarDrive.GameAction.Disable() has not been called.");
     }
 
     /// <summary>
@@ -337,6 +369,102 @@ public partial class @CarDrive: IInputActionCollection2, IDisposable
     /// Provides a new <see cref="MovementActions" /> instance referencing this action map.
     /// </summary>
     public MovementActions @Movement => new MovementActions(this);
+
+    // GameAction
+    private readonly InputActionMap m_GameAction;
+    private List<IGameActionActions> m_GameActionActionsCallbackInterfaces = new List<IGameActionActions>();
+    private readonly InputAction m_GameAction_Pause;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "GameAction".
+    /// </summary>
+    public struct GameActionActions
+    {
+        private @CarDrive m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public GameActionActions(@CarDrive wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "GameAction/Pause".
+        /// </summary>
+        public InputAction @Pause => m_Wrapper.m_GameAction_Pause;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_GameAction; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="GameActionActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(GameActionActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="GameActionActions" />
+        public void AddCallbacks(IGameActionActions instance)
+        {
+            if (instance == null || m_Wrapper.m_GameActionActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_GameActionActionsCallbackInterfaces.Add(instance);
+            @Pause.started += instance.OnPause;
+            @Pause.performed += instance.OnPause;
+            @Pause.canceled += instance.OnPause;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="GameActionActions" />
+        private void UnregisterCallbacks(IGameActionActions instance)
+        {
+            @Pause.started -= instance.OnPause;
+            @Pause.performed -= instance.OnPause;
+            @Pause.canceled -= instance.OnPause;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="GameActionActions.UnregisterCallbacks(IGameActionActions)" />.
+        /// </summary>
+        /// <seealso cref="GameActionActions.UnregisterCallbacks(IGameActionActions)" />
+        public void RemoveCallbacks(IGameActionActions instance)
+        {
+            if (m_Wrapper.m_GameActionActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="GameActionActions.AddCallbacks(IGameActionActions)" />
+        /// <seealso cref="GameActionActions.RemoveCallbacks(IGameActionActions)" />
+        /// <seealso cref="GameActionActions.UnregisterCallbacks(IGameActionActions)" />
+        public void SetCallbacks(IGameActionActions instance)
+        {
+            foreach (var item in m_Wrapper.m_GameActionActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_GameActionActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="GameActionActions" /> instance referencing this action map.
+    /// </summary>
+    public GameActionActions @GameAction => new GameActionActions(this);
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Movement" which allows adding and removing callbacks.
     /// </summary>
@@ -351,5 +479,20 @@ public partial class @CarDrive: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnDriving(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "GameAction" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="GameActionActions.AddCallbacks(IGameActionActions)" />
+    /// <seealso cref="GameActionActions.RemoveCallbacks(IGameActionActions)" />
+    public interface IGameActionActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Pause" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnPause(InputAction.CallbackContext context);
     }
 }

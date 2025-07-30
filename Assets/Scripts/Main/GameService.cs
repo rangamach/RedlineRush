@@ -34,5 +34,6 @@ public enum GameState
 {
     Startmenu,
     Gameplay,
+    Gamepaused,
     Gameover,
 }

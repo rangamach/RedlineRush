@@ -1,3 +1,5 @@
+using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -64,13 +66,26 @@ public class PlayerView1 : MonoBehaviour
     }
     private void SubscribeInvokeInputs()
     {
+        carDrive.GameAction.Pause.performed += CheckPauseInput;
         carDrive.Movement.Driving.performed += OnMovePerformed;
         carDrive.Movement.Driving.canceled += OnMoveCancelled;
     }
-    private void OnEnable() => carDrive.Movement.Enable();
-    private void OnDestroy() => carDrive.Movement.Disable();
+    private void OnEnable()
+    {
+        carDrive.GameAction.Enable();
+        carDrive.Movement.Enable();
+    }
+    private void OnDestroy()
+    {
+        carDrive.GameAction.Disable();
+        carDrive.Movement.Disable();
+
+        GameService.Instance.EventService.OnPlayerDeath.RemoveListener(PlayerDied);
+    }
     private void Start()
     {
+        GameService.Instance.EventService.OnPlayerDeath.AddListener(PlayerDied);
+
         currentMovementvector = Vector2.zero;
         rb = GetComponent<Rigidbody>();
     }
@@ -174,6 +189,23 @@ public class PlayerView1 : MonoBehaviour
     }
     private void OnMovePerformed(InputAction.CallbackContext ctx) => currentMovementvector = ctx.ReadValue<Vector2>();
     private void OnMoveCancelled(InputAction.CallbackContext ctx) => currentMovementvector = Vector2.zero;
+    private void CheckPauseInput(InputAction.CallbackContext ctx)
+    {
+        if(GameService.Instance.GameState == GameState.Gameplay || GameService.Instance.GameState == GameState.Gamepaused)
+        {
+            switch(GameService.Instance.GameState)
+            {
+                case GameState.Gameplay:
+                    Time.timeScale = 0f;
+                    GameService.Instance.SetGameState(GameState.Gamepaused);
+                    break;
+                case GameState.Gamepaused:
+                    Time.timeScale = 1f;
+                    GameService.Instance.SetGameState(GameState.Gameplay);
+                    break;
+            }
+        }
+    }
     private void CheckInput()
     {
         float slipAngle = Vector3.Angle(transform.forward, rb.linearVelocity - transform.forward);
@@ -305,6 +337,7 @@ public class PlayerView1 : MonoBehaviour
     }
     public void PlayerDied()
     {
+        GameService.Instance.SetGameState(GameState.Gameover);
         transform.GetChild(0).gameObject.SetActive(false);
     }
     public void ResetPlayer()
