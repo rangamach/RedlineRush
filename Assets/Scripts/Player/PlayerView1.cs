@@ -1,5 +1,3 @@
-using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,6 +6,9 @@ public class PlayerView1 : MonoBehaviour
     private Vector3 initialPosition;
     private Quaternion initialRotation;
     private Vector3 initialScale;
+
+    private Vector3 initialCameraPosition;
+    private Quaternion initialCameraRotation;
 
     [Header("Car")]
     [SerializeField] private float slipAllowance = 0.5f;
@@ -46,6 +47,7 @@ public class PlayerView1 : MonoBehaviour
         initialPosition = transform.position;
         initialRotation = transform.rotation;
         initialScale = transform.localScale;
+
 
         rb = GetComponent<Rigidbody>();
         carDrive = new CarDrive();
@@ -109,10 +111,12 @@ public class PlayerView1 : MonoBehaviour
 
         if(impactForce > 5f)
         {
-            shakeDuration = 0.5f;
             playerController.TakeDamage(20);
-
-            InstantGripRecovery();
+            if (GameService.Instance.GameState != GameState.Gameover)
+            {
+                shakeDuration = 0.5f;
+                InstantGripRecovery();
+            }
         }
     }
     private void InstantGripRecovery()
@@ -120,10 +124,18 @@ public class PlayerView1 : MonoBehaviour
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
+        colliders.RRWheelCollider.motorTorque = 0f;
+        colliders.RLWheelCollider.motorTorque = 0f;
+
         colliders.FRWheelCollider.brakeTorque = brake * 2f;
         colliders.FLWheelCollider.brakeTorque = brake * 2f;
         colliders.RRWheelCollider.brakeTorque = brake * 2f;
         colliders.RLWheelCollider.brakeTorque = brake * 2f;
+
+        colliders.FRWheelCollider.steerAngle = 0f;
+        colliders.FLWheelCollider.steerAngle = 0f;
+
+        ClearSmoke();
 
         Invoke(nameof(ReleaseBrakes),0.1f);
     }
@@ -133,6 +145,15 @@ public class PlayerView1 : MonoBehaviour
         colliders.FLWheelCollider.brakeTorque = 0;
         colliders.RRWheelCollider.brakeTorque = 0;
         colliders.RLWheelCollider.brakeTorque = 0;
+    }
+    private void ClearSmoke()
+    {
+        if (particles == null) return;
+
+        particles.FRParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        particles.FLParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        particles.RRParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        particles.RLParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
     private void InstantiateSmoke()
     {
@@ -334,6 +355,9 @@ public class PlayerView1 : MonoBehaviour
         Vector3 direction = transform.position - startPos;
         Quaternion startRot = Quaternion.LookRotation(direction + cameraRotationOffset, Vector3.up);
         mainCamera.transform.rotation = startRot;
+
+        initialCameraPosition = startPos;
+        initialCameraRotation = startRot;
     }
     public void PlayerDied()
     {
@@ -342,6 +366,7 @@ public class PlayerView1 : MonoBehaviour
     }
     public void ResetPlayer()
     {
+        VelocityRemover();
         ResetTransform();
         transform.GetChild(0).gameObject.SetActive(true);
     }
@@ -350,6 +375,15 @@ public class PlayerView1 : MonoBehaviour
         transform.position = initialPosition;
         transform.rotation = initialRotation;
         transform.localScale = initialScale;
+
+        mainCamera.transform.position = initialCameraPosition;
+        mainCamera.transform.rotation = initialCameraRotation;
+    }
+    private void VelocityRemover()
+    {
+        currentMovementvector = Vector2.zero;
+
+        InstantGripRecovery();
     }
 }
 [System.Serializable]

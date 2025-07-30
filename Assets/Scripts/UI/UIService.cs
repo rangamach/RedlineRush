@@ -21,10 +21,12 @@ public class UIService : MonoBehaviour
 
     [Header("Gamepaused UI")]
     [SerializeField] private RectTransform gamepausedUI;
+    [SerializeField] private Button exitButton;
 
     [Header("Gameover UI")]
     [SerializeField] private RectTransform gameoverUI;
     [SerializeField] private Button playButtonGO;
+    [SerializeField] private Button exitButtonGO;
 
     private void Awake()
     {
@@ -36,6 +38,11 @@ public class UIService : MonoBehaviour
         informationButton.onClick.AddListener(onInformationButtonClicked);
         helpButton.onClick.AddListener(onHelpButtonClicked);
         quitButton.onClick.AddListener(onQuitButtonClickedSM);
+
+        exitButton.onClick.AddListener(onExitButtonClicked);
+
+        playButtonGO.onClick.AddListener(onPlayButtonClickedGO);
+        exitButtonGO.onClick.AddListener(onExitButtonClicked);
     }
 
     private void Update()
@@ -112,14 +119,10 @@ public class UIService : MonoBehaviour
             Application.Quit();
 #endif
         }
-        else if(informationUI.gameObject.activeInHierarchy)
-        {
-            informationUI.gameObject.SetActive(false);
-            mainmenuUI.gameObject.SetActive(true);
-        }
-        else if(helpUI.gameObject.activeInHierarchy)
+        else if(informationUI.gameObject.activeInHierarchy || helpUI.gameObject.activeInHierarchy)
         {
             helpUI.gameObject.SetActive(false);
+            informationUI.gameObject.SetActive(false);
             mainmenuUI.gameObject.SetActive(true);
         }
     }
@@ -133,6 +136,18 @@ public class UIService : MonoBehaviour
         if (fillImage.fillAmount != health)
         {
             fillImage.fillAmount = Mathf.Lerp(fillImage.fillAmount, health, healthBarSpeed * Time.deltaTime);
+        }
+    }
+    #endregion
+
+    #region Gamepaused UI
+    private void onExitButtonClicked()
+    {
+        GameService.Instance.PlayerService.ResetPlayer();
+        GameService.Instance.SetGameState(GameState.Startmenu);
+        if (GameService.Instance.GameState == GameState.Gamepaused)
+        {
+            Time.timeScale = 1f;
         }
     }
     #endregion
