@@ -97,21 +97,25 @@ public class UIService : MonoBehaviour
     #region Start UI
     private void onPlayButtonClickedSM()
     {
+        GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.ButtonClick);
         GameService.Instance.SetGameState(GameState.Gameplay);
     }
     private void onInformationButtonClicked()
     {
+        GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.ButtonClick);
         mainmenuUI.gameObject.SetActive(false);
         informationUI.gameObject.SetActive(true);
     }
     private void onHelpButtonClicked()
     {
+        GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.ButtonClick);
         mainmenuUI.gameObject.SetActive(false);
         helpUI.gameObject.SetActive(true);
     }
     private void onQuitButtonClickedSM()
     {
-        if(mainmenuUI.gameObject.activeInHierarchy)
+        GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.ButtonClick);
+        if (mainmenuUI.gameObject.activeInHierarchy)
         {
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
@@ -143,6 +147,7 @@ public class UIService : MonoBehaviour
     #region Gamepaused UI
     private void onExitButtonClicked()
     {
+        GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.ButtonClick);
         GameService.Instance.PlayerService.ResetPlayer();
         GameService.Instance.SetGameState(GameState.Startmenu);
         if (GameService.Instance.GameState == GameState.Gamepaused)
@@ -155,6 +160,7 @@ public class UIService : MonoBehaviour
     #region Gameover UI
     private void onPlayButtonClickedGO()
     {
+        GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.ButtonClick);
         GameService.Instance.PlayerService.ResetPlayer();
         GameService.Instance.SetGameState(GameState.Gameplay);
     }
