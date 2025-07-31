@@ -93,4 +93,26 @@ public class SoundService
         carAudioSource.pitch = Mathf.Clamp(minPitch + speed * pitchMultiplier,minPitch,maxPitch);
         carAudioSource.volume = Mathf.Clamp(idleVolume + speed * volumeMultiplier, idleVolume,maxVolume);
     }
+    public void StopAllNoneBGM()
+    {
+        if(sfxAudioSource != null)
+        {
+            sfxAudioSource.Stop();
+        }
+        if (carAudioSource != null)
+        {
+            carAudioSource.Stop();
+        }
+    }
+    public void MuteNonBGM(bool toggle)
+    {
+        if(sfxAudioSource != null)
+        {
+            sfxAudioSource.mute = toggle;
+        }
+        if (carAudioSource != null)
+        {
+            carAudioSource.mute = toggle;
+        }
+    }
 }

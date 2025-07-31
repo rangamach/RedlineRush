@@ -18,4 +18,5 @@ public enum SoundTypes
     ButtonClick,
     CarStart,
     CarEngine,
+    CarCrash,
 }

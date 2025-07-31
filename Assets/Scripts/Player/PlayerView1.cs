@@ -118,6 +118,7 @@ public class PlayerView1 : MonoBehaviour
                 shakeDuration = 0.5f;
                 InstantGripRecovery();
             }
+            GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.CarCrash);
         }
     }
     private void InstantGripRecovery()
@@ -218,10 +219,12 @@ public class PlayerView1 : MonoBehaviour
             switch(GameService.Instance.GameState)
             {
                 case GameState.Gameplay:
+                    GameService.Instance.SoundService.MuteNonBGM(true);
                     Time.timeScale = 0f;
                     GameService.Instance.SetGameState(GameState.Gamepaused);
                     break;
                 case GameState.Gamepaused:
+                    GameService.Instance.SoundService.MuteNonBGM(false);
                     Time.timeScale = 1f;
                     GameService.Instance.SetGameState(GameState.Gameplay);
                     break;

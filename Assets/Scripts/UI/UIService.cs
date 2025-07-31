@@ -57,6 +57,7 @@ public class UIService : MonoBehaviour
             case GameState.Startmenu:
                 if (!startMenuUI.gameObject.activeInHierarchy)
                 {
+                    GameService.Instance.SoundService.MuteNonBGM(true);
                     DisableAllUIs();
                     startMenuUI.gameObject.SetActive(true);
                     TogglePlayerView(false);
@@ -65,6 +66,7 @@ public class UIService : MonoBehaviour
             case GameState.Gameplay:
                 if (!gameplayUI.gameObject.activeInHierarchy)
                 {
+                    GameService.Instance.SoundService.MuteNonBGM(false);
                     DisableAllUIs();
                     TogglePlayerView(true);
                     gameplayUI.gameObject.SetActive(true);
@@ -78,6 +80,7 @@ public class UIService : MonoBehaviour
             case GameState.Gameover:
                 if (!gameoverUI.gameObject.activeInHierarchy)
                 {
+                    GameService.Instance.SoundService.MuteNonBGM(true);
                     DisableAllUIs();
                     TogglePlayerView(false);
                     gameoverUI.gameObject.SetActive(true);
@@ -97,7 +100,7 @@ public class UIService : MonoBehaviour
     {
         float delay = GameService.Instance.SoundService.GetAudioClipLength(SoundTypes.CarStart);
         GameService.Instance.SoundService.StartCarEngine();
-        Invoke(nameof(StartEngineLoop), delay);
+        Invoke(nameof(StartEngineLoop), delay - 0.5f);
     }
 
     #region Start UI
