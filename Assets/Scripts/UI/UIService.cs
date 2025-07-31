@@ -93,13 +93,22 @@ public class UIService : MonoBehaviour
         gameoverUI.gameObject.SetActive(false);
     }
     private void TogglePlayerView(bool active) => GameService.Instance.PlayerService.TogglePlayerView(active);
+    private void StartCarEngine()
+    {
+        float delay = GameService.Instance.SoundService.GetAudioClipLength(SoundTypes.CarStart);
+        GameService.Instance.SoundService.StartCarEngine();
+        Invoke(nameof(StartEngineLoop), delay);
+    }
 
     #region Start UI
     private void onPlayButtonClickedSM()
     {
         GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.ButtonClick);
         GameService.Instance.SetGameState(GameState.Gameplay);
+
+        StartCarEngine();
     }
+    private void StartEngineLoop() => GameService.Instance.SoundService.StartCarEngineLoop();
     private void onInformationButtonClicked()
     {
         GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.ButtonClick);
@@ -163,6 +172,8 @@ public class UIService : MonoBehaviour
         GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.ButtonClick);
         GameService.Instance.PlayerService.ResetPlayer();
         GameService.Instance.SetGameState(GameState.Gameplay);
+
+        StartCarEngine();
     }
     #endregion
 }

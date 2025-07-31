@@ -100,6 +100,7 @@ public class PlayerView1 : MonoBehaviour
         ApplyBrake();
         CheckParticles();
         ApplyWheelMovement();
+        UpdateCarEngineAudio();
     }
     private void FixedUpdate()
     {
@@ -384,6 +385,10 @@ public class PlayerView1 : MonoBehaviour
         currentMovementvector = Vector2.zero;
 
         InstantGripRecovery();
+    }
+    private void UpdateCarEngineAudio()
+    {
+        GameService.Instance.SoundService.UpdateCarEnginePitch(rb.linearVelocity.magnitude * 3.6f);
     }
 }
 [System.Serializable]

@@ -16,4 +16,6 @@ public enum SoundTypes
 {
     Background,
     ButtonClick,
+    CarStart,
+    CarEngine,
 }

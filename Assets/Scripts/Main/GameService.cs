@@ -22,6 +22,7 @@ public class GameService : GenericMonoSingleton<GameService>
     [Header("Audio Sources")]
     [SerializeField] private AudioSource bgSource;
     [SerializeField] private AudioSource sfxSource;
+    [SerializeField] private AudioSource carSource;
 
     private void Awake()
     {
@@ -34,7 +35,7 @@ public class GameService : GenericMonoSingleton<GameService>
     private void CreateServices()
     {
         PlayerService = new PlayerService(playerSO);
-        SoundService = new SoundService(soundSO,bgSource,sfxSource);
+        SoundService = new SoundService(soundSO,bgSource,sfxSource,carSource);
         EventService = new EventService();
     }
     public void SetGameState(GameState state) => this.GameState = state;
