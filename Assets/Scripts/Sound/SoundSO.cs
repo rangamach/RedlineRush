@@ -19,4 +19,5 @@ public enum SoundTypes
     CarStart,
     CarEngine,
     CarCrash,
+    CarExplosion,
 }

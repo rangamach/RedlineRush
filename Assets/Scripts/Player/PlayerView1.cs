@@ -18,7 +18,9 @@ public class PlayerView1 : MonoBehaviour
     [SerializeField] private WheelColliders colliders;
     [SerializeField] private WheelTransforms transforms;
     [SerializeField] private WheelParticles particles;
+    [SerializeField] private CarExplosion explosion;
     [SerializeField] private ParticleSystem smokeParticlePrefab;
+    [SerializeField] private ParticleSystem explosionParticlePrefab;
     [SerializeField] private AnimationCurve steeringCurve;
     [SerializeField] private float wheelRotationSpeed;
     private PlayerController playerController;
@@ -54,6 +56,7 @@ public class PlayerView1 : MonoBehaviour
 
         SetCamera();
         InstantiateSmoke();
+        InstantiateExplosionParticleEffect();
 
         SubscribeInvokeInputs();
     }
@@ -112,11 +115,15 @@ public class PlayerView1 : MonoBehaviour
 
         if(impactForce > 5f)
         {
-            playerController.TakeDamage(20);
+            playerController.TakeDamage(50);
             if (GameService.Instance.GameState != GameState.Gameover)
             {
                 shakeDuration = 0.5f;
                 InstantGripRecovery();
+            }
+            else
+            {
+                return;
             }
             GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.CarCrash);
         }
@@ -165,6 +172,18 @@ public class PlayerView1 : MonoBehaviour
         particles.FLParticle = Instantiate(smokeParticlePrefab, colliders.FLWheelCollider.transform.position - Vector3.up * colliders.FLWheelCollider.radius + new Vector3(0.2f, 0, 0), Quaternion.Euler(180f, 0f, 0f), colliders.FLWheelCollider.transform).GetComponent<ParticleSystem>();
         particles.RRParticle = Instantiate(smokeParticlePrefab, colliders.RRWheelCollider.transform.position - Vector3.up * colliders.RRWheelCollider.radius + new Vector3(-0.12f, 0, 0), Quaternion.Euler(180f, 0f, 0f), colliders.RRWheelCollider.transform).GetComponent<ParticleSystem>();
         particles.RLParticle = Instantiate(smokeParticlePrefab, colliders.RLWheelCollider.transform.position - Vector3.up * colliders.RLWheelCollider.radius + new Vector3(0.1f, 0, 0), Quaternion.Euler(180f, 0f, 0f), colliders.RLWheelCollider.transform).GetComponent<ParticleSystem>();
+    }
+    private void InstantiateExplosionParticleEffect()
+    {
+        explosion = new CarExplosion();
+
+        explosion.WholeCarExplosion = Instantiate(explosionParticlePrefab, new Vector3(0f,1.25f,0f), Quaternion.Euler(90f,0f,0f), transform);
+        explosion.WholeCarExplosion.transform.localScale = new Vector3(1f,1f,1f);
+        
+        var mod = explosion.WholeCarExplosion.main;
+        mod.loop = false;
+
+        explosion.WholeCarExplosion.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
     private void CheckParticles()
     {
@@ -219,12 +238,12 @@ public class PlayerView1 : MonoBehaviour
             switch(GameService.Instance.GameState)
             {
                 case GameState.Gameplay:
-                    GameService.Instance.SoundService.MuteNonBGM(true);
+                    GameService.Instance.SoundService.NonBGMAudios(true);
                     Time.timeScale = 0f;
                     GameService.Instance.SetGameState(GameState.Gamepaused);
                     break;
                 case GameState.Gamepaused:
-                    GameService.Instance.SoundService.MuteNonBGM(false);
+                    GameService.Instance.SoundService.NonBGMAudios(false);
                     Time.timeScale = 1f;
                     GameService.Instance.SetGameState(GameState.Gameplay);
                     break;
@@ -367,6 +386,11 @@ public class PlayerView1 : MonoBehaviour
     {
         GameService.Instance.SetGameState(GameState.Gameover);
         transform.GetChild(0).gameObject.SetActive(false);
+
+        GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.CarExplosion);
+
+        explosion.WholeCarExplosion.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        explosion.WholeCarExplosion.Play();
     }
     public void ResetPlayer()
     {
@@ -416,4 +440,8 @@ public class WheelParticles
     public ParticleSystem FLParticle;
     public ParticleSystem RRParticle;
     public ParticleSystem RLParticle;
+}
+public class CarExplosion
+{
+    public ParticleSystem WholeCarExplosion;
 }

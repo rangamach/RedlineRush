@@ -524,6 +524,7 @@ MonoBehaviour:
     RRTransform: {fileID: 652712299781194281}
     RLTransform: {fileID: 8359308391498648961}
   smokeParticlePrefab: {fileID: 2239019185805339134, guid: 7dac7830628fe2d49ae148ce2c815b08, type: 3}
+  explosionParticlePrefab: {fileID: 3345248989584403941, guid: 6b5e9c3dedde64240ac58831af0e3754, type: 3}
   steeringCurve:
     serializedVersion: 2
     m_Curve:

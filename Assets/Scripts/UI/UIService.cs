@@ -57,7 +57,7 @@ public class UIService : MonoBehaviour
             case GameState.Startmenu:
                 if (!startMenuUI.gameObject.activeInHierarchy)
                 {
-                    GameService.Instance.SoundService.MuteNonBGM(true);
+                    GameService.Instance.SoundService.NonBGMAudios(true);
                     DisableAllUIs();
                     startMenuUI.gameObject.SetActive(true);
                     TogglePlayerView(false);
@@ -66,7 +66,6 @@ public class UIService : MonoBehaviour
             case GameState.Gameplay:
                 if (!gameplayUI.gameObject.activeInHierarchy)
                 {
-                    GameService.Instance.SoundService.MuteNonBGM(false);
                     DisableAllUIs();
                     TogglePlayerView(true);
                     gameplayUI.gameObject.SetActive(true);
@@ -80,7 +79,7 @@ public class UIService : MonoBehaviour
             case GameState.Gameover:
                 if (!gameoverUI.gameObject.activeInHierarchy)
                 {
-                    GameService.Instance.SoundService.MuteNonBGM(true);
+                    GameService.Instance.SoundService.NonBGMAudios(true);
                     DisableAllUIs();
                     TogglePlayerView(false);
                     gameoverUI.gameObject.SetActive(true);
@@ -161,11 +160,11 @@ public class UIService : MonoBehaviour
     {
         GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.ButtonClick);
         GameService.Instance.PlayerService.ResetPlayer();
-        GameService.Instance.SetGameState(GameState.Startmenu);
         if (GameService.Instance.GameState == GameState.Gamepaused)
         {
             Time.timeScale = 1f;
         }
+        GameService.Instance.SetGameState(GameState.Startmenu);
     }
     #endregion
 
