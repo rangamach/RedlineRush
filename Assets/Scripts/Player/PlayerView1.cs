@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -168,18 +169,21 @@ public class PlayerView1 : MonoBehaviour
     {
         particles = new WheelParticles();
 
-        particles.FRParticle = Instantiate(smokeParticlePrefab, colliders.FRWheelCollider.transform.position - Vector3.up * colliders.FRWheelCollider.radius + new Vector3(-0.15f,0,0), Quaternion.Euler(180f, 0f, 0f), colliders.FRWheelCollider.transform).GetComponent<ParticleSystem>();
-        particles.FLParticle = Instantiate(smokeParticlePrefab, colliders.FLWheelCollider.transform.position - Vector3.up * colliders.FLWheelCollider.radius + new Vector3(0.2f, 0, 0), Quaternion.Euler(180f, 0f, 0f), colliders.FLWheelCollider.transform).GetComponent<ParticleSystem>();
-        particles.RRParticle = Instantiate(smokeParticlePrefab, colliders.RRWheelCollider.transform.position - Vector3.up * colliders.RRWheelCollider.radius + new Vector3(-0.12f, 0, 0), Quaternion.Euler(180f, 0f, 0f), colliders.RRWheelCollider.transform).GetComponent<ParticleSystem>();
-        particles.RLParticle = Instantiate(smokeParticlePrefab, colliders.RLWheelCollider.transform.position - Vector3.up * colliders.RLWheelCollider.radius + new Vector3(0.1f, 0, 0), Quaternion.Euler(180f, 0f, 0f), colliders.RLWheelCollider.transform).GetComponent<ParticleSystem>();
+        particles.FRParticle = Instantiate(smokeParticlePrefab, transforms.FRTransform.transform.position - Vector3.up * colliders.FRWheelCollider.radius, Quaternion.Euler(180f, 75f, 0f), colliders.FRWheelCollider.transform).GetComponent<ParticleSystem>();
+        particles.FLParticle = Instantiate(smokeParticlePrefab, transforms.FLTransform.transform.position - Vector3.up * colliders.FLWheelCollider.radius, Quaternion.Euler(180f, 75f, 0f), colliders.FLWheelCollider.transform).GetComponent<ParticleSystem>();
+        particles.RRParticle = Instantiate(smokeParticlePrefab, transforms.RRTransform.transform.position - Vector3.up * colliders.RRWheelCollider.radius, Quaternion.Euler(180f, 75f, 0f), colliders.RRWheelCollider.transform).GetComponent<ParticleSystem>();
+        particles.RLParticle = Instantiate(smokeParticlePrefab, transforms.RLTransform.transform.position - Vector3.up * colliders.RLWheelCollider.radius, Quaternion.Euler(180f, 75f, 0f), colliders.RLWheelCollider.transform).GetComponent<ParticleSystem>();
     }
     private void InstantiateExplosionParticleEffect()
     {
         explosion = new CarExplosion();
 
-        explosion.WholeCarExplosion = Instantiate(explosionParticlePrefab, new Vector3(0f,1.25f,0f), Quaternion.Euler(90f,0f,0f), transform);
-        explosion.WholeCarExplosion.transform.localScale = new Vector3(1f,1f,1f);
-        
+        explosion.WholeCarExplosion = Instantiate(explosionParticlePrefab);
+        explosion.WholeCarExplosion.transform.SetParent(null);
+        explosion.WholeCarExplosion.transform.localPosition = Vector3.zero + new Vector3(0f, 0.75f, -0.25f);
+        explosion.WholeCarExplosion.transform.localRotation = Quaternion.identity;
+        explosion.WholeCarExplosion.transform.localScale = new Vector3(1f, 1f, 1f);
+
         var mod = explosion.WholeCarExplosion.main;
         mod.loop = false;
 
@@ -388,6 +392,9 @@ public class PlayerView1 : MonoBehaviour
         transform.GetChild(0).gameObject.SetActive(false);
 
         GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.CarExplosion);
+
+        explosion.WholeCarExplosion.transform.position = transform.position + new Vector3(0f,0.75f,0.25f);
+        explosion.WholeCarExplosion.transform.rotation = Quaternion.identity;
 
         explosion.WholeCarExplosion.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         explosion.WholeCarExplosion.Play();

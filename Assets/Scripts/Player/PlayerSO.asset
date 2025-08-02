@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7348f752939c3b244847c381b29c3e93, type: 3}
   m_Name: PlayerSO
   m_EditorClassIdentifier: 
-  PlayerView: {fileID: 5154445169978868552, guid: f6fd6b742ddb3084c88946428364407d, type: 3}
-  positon: {x: 0, y: 0, z: 0}
-  rotation: {x: 0, y: 0, z: 0}
+  PlayerView: {fileID: 1035139672488850910, guid: 3dfaee4faa8304e4daa9513c9d7ff3f2, type: 3}
+  positon: {x: -116.42, y: 0.8736, z: 63.619}
+  rotation: {x: 0.252, y: 74.999, z: -0.191}
   scale: {x: 1, y: 1, z: 1}
   MaxHealth: 100
