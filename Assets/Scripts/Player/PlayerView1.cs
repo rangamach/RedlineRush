@@ -67,8 +67,8 @@ public class PlayerView1 : MonoBehaviour
         carDrive = new CarDrive();
 
         SetCamera();
-        InstantiateSmoke();
-        InstantiateExplosionParticleEffect();
+        //InstantiateSmoke();
+        //InstantiateExplosionParticleEffect();
     }
     private void SetupSuspension()
     {
@@ -135,7 +135,7 @@ public class PlayerView1 : MonoBehaviour
 
         CheckInput();
 
-        CheckParticles();
+        //CheckParticles();
         ApplyWheelMovement();
         UpdateCarEngineAudio();
     }
