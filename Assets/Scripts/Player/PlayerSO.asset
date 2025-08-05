@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7348f752939c3b244847c381b29c3e93, type: 3}
+  m_Name: PlayerSO
+  m_EditorClassIdentifier: 
+  PlayerView: {fileID: 1035139672488850910, guid: 3dfaee4faa8304e4daa9513c9d7ff3f2, type: 3}
+  positon: {x: -116.42, y: 0.8736, z: 63.619}
+  rotation: {x: 0.252, y: 74.999, z: -0.191}
+  scale: {x: 1, y: 1, z: 1}
+  MaxHealth: 100
