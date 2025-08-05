@@ -278,7 +278,6 @@ public class UIService : MonoBehaviour
         float time = GetBestTime();
 
         return time > 0 ? timeElapsed < time : true;
-        //return time <= 0 || timeElapsed < time;
     }
     private void PlayCheer()
     {
