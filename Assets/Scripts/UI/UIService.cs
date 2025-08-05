@@ -41,8 +41,6 @@ public class UIService : MonoBehaviour
 
     private void Start()
     {
-        PlayerPrefs.DeleteAll();
-        PlayerPrefs.Save();
         ResetTimer();
     }
 
