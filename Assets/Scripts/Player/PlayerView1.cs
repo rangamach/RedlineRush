@@ -391,6 +391,16 @@ public class PlayerView1 : MonoBehaviour
 
     private void ApplyBrake()
     {
+        // If applying gas, don't brake
+        if (currentMovementvector.y > 0.01f)
+        {
+            colliders.FRWheelCollider.brakeTorque = 0f;
+            colliders.FLWheelCollider.brakeTorque = 0f;
+            colliders.RLWheelCollider.brakeTorque = 0f;
+            colliders.RRWheelCollider.brakeTorque = 0f;
+            return;
+        }
+
         float frontBrake = brakeInput * brake * 0.7f;
         float rearBrake = brakeInput * brake * 0.3f;
 
