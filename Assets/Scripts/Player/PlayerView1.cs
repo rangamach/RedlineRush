@@ -1,5 +1,4 @@
-using Unity.VisualScripting;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerView1 : MonoBehaviour
@@ -10,6 +9,10 @@ public class PlayerView1 : MonoBehaviour
 
     private Vector3 initialCameraPosition;
     private Quaternion initialCameraRotation;
+
+    private bool hasReversedThruGoal = false;
+
+    private bool finishedRace = false;
 
     [Header("Car")]
     [SerializeField] private float slipAllowance = 0.5f;
@@ -29,6 +32,14 @@ public class PlayerView1 : MonoBehaviour
     private Vector2 currentMovementvector;
     private float slipAngle;
     private float brakeInput;
+    private int lap = -1;
+
+    [Header("Car Stability Settings")]
+    [SerializeField] private float antiRollForce = 6000f; // Reduced from 8000
+    [SerializeField] private float centerOfMassY = -0.9f; // Lowered center of mass
+    [SerializeField] private float suspensionSpringStrength = 35000f; // Softer
+    [SerializeField] private float suspensionDamperStrength = 5000f;
+    [SerializeField] private float rearDownforceMultiplier = 30f; // Pushes rear down
 
     [Header("Camera")]
     [SerializeField] private float tiltSpeed;
@@ -44,7 +55,6 @@ public class PlayerView1 : MonoBehaviour
 
     //InputAction
     private CarDrive carDrive;
-
     private void Awake()
     {
         initialPosition = transform.position;
@@ -53,13 +63,29 @@ public class PlayerView1 : MonoBehaviour
 
 
         rb = GetComponent<Rigidbody>();
+        rb.centerOfMass = new Vector3(0f, centerOfMassY, 0f);
         carDrive = new CarDrive();
 
         SetCamera();
         InstantiateSmoke();
         InstantiateExplosionParticleEffect();
+    }
+    private void SetupSuspension()
+    {
+        SetupWheelSuspension(colliders.FRWheelCollider, true);
+        SetupWheelSuspension(colliders.FLWheelCollider, true);
+        SetupWheelSuspension(colliders.RRWheelCollider, false);
+        SetupWheelSuspension(colliders.RLWheelCollider, false);
+    }
 
-        SubscribeInvokeInputs();
+    private void SetupWheelSuspension(WheelCollider wheel, bool isFront)
+    {
+        JointSpring spring = wheel.suspensionSpring;
+
+        spring.spring = 32000f;
+        spring.damper = 8000f;
+
+        wheel.suspensionDistance = 0.14f;
     }
     public PlayerView1 Spawn(Vector3 position, Vector3 rotation, Vector3 scale)
     {
@@ -70,45 +96,63 @@ public class PlayerView1 : MonoBehaviour
 
         return playerView;
     }
-    private void SubscribeInvokeInputs()
-    {
-        carDrive.GameAction.Pause.performed += CheckPauseInput;
-        carDrive.Movement.Driving.performed += OnMovePerformed;
-        carDrive.Movement.Driving.canceled += OnMoveCancelled;
-    }
-    private void OnEnable()
-    {
-        carDrive.GameAction.Enable();
-        carDrive.Movement.Enable();
-    }
+        private void SubscribeInvokeInputs()
+        {
+            carDrive.GameAction.Pause.performed += CheckPauseInput;
+        }
+        private void OnEnable()
+        {
+            carDrive.GameAction.Enable();
+            carDrive.Movement.Enable();
+
+            SubscribeInvokeInputs();
+        }
+        private void OnDisable()
+        {
+            carDrive.GameAction.Pause.performed -= CheckPauseInput;
+
+            carDrive.GameAction.Disable();
+            carDrive.Movement.Disable();
+        }
     private void OnDestroy()
     {
-        carDrive.GameAction.Disable();
-        carDrive.Movement.Disable();
-
         GameService.Instance.EventService.OnPlayerDeath.RemoveListener(PlayerDied);
     }
     private void Start()
     {
         GameService.Instance.EventService.OnPlayerDeath.AddListener(PlayerDied);
 
+        SetupCarFriction();
+
         currentMovementvector = Vector2.zero;
         rb = GetComponent<Rigidbody>();
     }
     private void Update()
     {
+        currentMovementvector = carDrive.Movement.Driving.ReadValue<Vector2>();
+
+        ApplyDeadZone();
+
         CheckInput();
 
-        ApplyGas();
-        ApplySteering();
-        ApplyBrake();
         CheckParticles();
         ApplyWheelMovement();
         UpdateCarEngineAudio();
     }
     private void FixedUpdate()
     {
+        ApplyGas();
+        ApplySteering();
+        ApplyBrake();
+
         CameraFollowCar();
+    }
+    private void ApplyDeadZone()
+    {
+        float deadzone = 0.05f;
+        if (Mathf.Abs(currentMovementvector.x) < deadzone) currentMovementvector.x = 0;
+        if (Mathf.Abs(currentMovementvector.y) < deadzone) currentMovementvector.y = 0;
+
     }
     private void OnCollisionEnter(Collision collision)
     {
@@ -116,7 +160,7 @@ public class PlayerView1 : MonoBehaviour
 
         if(impactForce > 5f)
         {
-            playerController.TakeDamage(50);
+            playerController.TakeDamage(10);
             if (GameService.Instance.GameState != GameState.Gameover)
             {
                 shakeDuration = 0.5f;
@@ -128,6 +172,73 @@ public class PlayerView1 : MonoBehaviour
             }
             GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.CarCrash);
         }
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        if(other.gameObject.layer == LayerMask.NameToLayer("Goal"))
+        {
+            Vector3 velDir = rb.linearVelocity.normalized;
+            Vector3 goalDir = other.transform.right;
+
+            float dot = Vector3.Dot(goalDir,velDir);
+
+            if(dot < 0)
+            {
+                hasReversedThruGoal = true;
+                return;
+            }
+            if (!hasReversedThruGoal)
+            {
+                lap++;
+                if(lap == 1)
+                {
+                    finishedRace = true;
+                    GameService.Instance.SetGameState(GameState.Gameover);
+                }
+            }
+        }
+    }
+    private void StabilityControl()
+    {
+        Vector3 localVelocity = transform.InverseTransformDirection(rb.linearVelocity);
+        float angle = Mathf.Atan2(localVelocity.x, localVelocity.z) * Mathf.Rad2Deg;
+
+        if (Mathf.Abs(angle) > 15f) // Too much slip
+        {
+            float brakeForce = Mathf.Abs(angle) / 15f * 1500f;
+            colliders.FRWheelCollider.brakeTorque = brakeForce;
+            colliders.FLWheelCollider.brakeTorque = brakeForce;
+        }
+        else
+        {
+            colliders.FRWheelCollider.brakeTorque = 0f;
+            colliders.FLWheelCollider.brakeTorque = 0f;
+        }
+    }
+    private void SetupCarFriction()
+    {
+        SetupWheelFriction(colliders.FRWheelCollider, 2.0f, 2.3f);
+        SetupWheelFriction(colliders.FLWheelCollider, 2.0f, 2.3f);
+        SetupWheelFriction(colliders.RRWheelCollider, 2.0f, 3f); // Slightly more rear grip
+        SetupWheelFriction(colliders.RLWheelCollider, 2.0f, 3f);
+    }
+    private void SetupWheelFriction(WheelCollider wheel, float forwardStiffness, float sidewaysStiffness)
+    {
+        WheelFrictionCurve forwardFriction = wheel.forwardFriction;
+        forwardFriction.extremumSlip = 0.4f;
+        forwardFriction.extremumValue = 1f;
+        forwardFriction.asymptoteSlip = 0.8f;
+        forwardFriction.asymptoteValue = 0.5f;
+        forwardFriction.stiffness = forwardStiffness;
+        wheel.forwardFriction = forwardFriction;
+
+        WheelFrictionCurve sidewaysFriction = wheel.sidewaysFriction;
+        sidewaysFriction.extremumSlip = 0.3f;
+        sidewaysFriction.extremumValue = 1f;
+        sidewaysFriction.asymptoteSlip = 0.5f;
+        sidewaysFriction.asymptoteValue = 0.75f;
+        sidewaysFriction.stiffness = sidewaysStiffness;
+        wheel.sidewaysFriction = sidewaysFriction;
     }
     private void InstantGripRecovery()
     {
@@ -234,7 +345,10 @@ public class PlayerView1 : MonoBehaviour
         UpdateWheels(colliders.RLWheelCollider, transforms.RLTransform);
     }
     private void OnMovePerformed(InputAction.CallbackContext ctx) => currentMovementvector = ctx.ReadValue<Vector2>();
-    private void OnMoveCancelled(InputAction.CallbackContext ctx) => currentMovementvector = Vector2.zero;
+    private void OnMoveCancelled(InputAction.CallbackContext ctx)
+    {
+        currentMovementvector = Vector2.zero;
+    }
     private void CheckPauseInput(InputAction.CallbackContext ctx)
     {
         if(GameService.Instance.GameState == GameState.Gameplay || GameService.Instance.GameState == GameState.Gamepaused)
@@ -291,15 +405,15 @@ public class PlayerView1 : MonoBehaviour
         Vector3 localVelocity = transform.InverseTransformDirection(rb.linearVelocity);
         bool isReversing = localVelocity.z < -0.1;
 
-        float steeringAngle = currentMovementvector.x * steeringCurve.Evaluate(rb.linearVelocity.magnitude);
+        float speedkmph = rb.linearVelocity.magnitude * 3.6f;
 
-        Vector3 velocityForSteering = rb.linearVelocity;
+        float maxSteerAngle = steeringCurve.Evaluate(speedkmph);
+        float steeringAngle = currentMovementvector.x * maxSteerAngle;
 
-        if(isReversing)
-            velocityForSteering = -rb.linearVelocity;
-
-        steeringAngle += Vector3.SignedAngle(transform.forward, velocityForSteering + transform.forward, Vector3.up);
-        steeringAngle = Mathf.Clamp(steeringAngle, -90f, 90f);
+        if (isReversing)
+        {
+            steeringAngle *= -1;
+        }
 
         colliders.FRWheelCollider.steerAngle = steeringAngle;
         colliders.FLWheelCollider.steerAngle = steeringAngle;
@@ -312,7 +426,7 @@ public class PlayerView1 : MonoBehaviour
         wheelCollider.GetWorldPose(out collider_position, out collider_quaternion);
 
         wheelTransform.position = collider_position;
-        wheelTransform.rotation = Quaternion.Slerp(wheelTransform.rotation, collider_quaternion, wheelRotationSpeed * Time.deltaTime);
+        wheelTransform.rotation = Quaternion.Slerp(wheelTransform.rotation, collider_quaternion, wheelRotationSpeed * 2f * Time.deltaTime);
     }
     private void CameraFollowCar()
     {
@@ -403,6 +517,7 @@ public class PlayerView1 : MonoBehaviour
     {
         VelocityRemover();
         ResetTransform();
+        ResetLap();
         transform.GetChild(0).gameObject.SetActive(true);
     }
     private void ResetTransform()
@@ -414,6 +529,11 @@ public class PlayerView1 : MonoBehaviour
         mainCamera.transform.position = initialCameraPosition;
         mainCamera.transform.rotation = initialCameraRotation;
     }
+    private void ResetLap()
+    {
+        finishedRace = false;
+        lap = -1;
+    }
     private void VelocityRemover()
     {
         currentMovementvector = Vector2.zero;
@@ -424,6 +544,7 @@ public class PlayerView1 : MonoBehaviour
     {
         GameService.Instance.SoundService.UpdateCarEnginePitch(rb.linearVelocity.magnitude * 3.6f);
     }
+    public bool GetFinishedRace() => finishedRace;
 }
 [System.Serializable]
 public class WheelColliders

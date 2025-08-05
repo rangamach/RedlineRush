@@ -28,6 +28,6 @@ public class PlayerController
             PlayerModel.SetCurrentHealth(health);
         }
     }
-
     public float GetCurrentHealth() => PlayerModel.CurrentHealth;
+    public bool GetFinishedRace() => PlayerView.GetFinishedRace();
 }

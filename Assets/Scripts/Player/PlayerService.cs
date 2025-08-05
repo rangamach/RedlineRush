@@ -10,4 +10,5 @@ public class PlayerService
     public float GetCurrentHealth() => PlayerController.GetCurrentHealth();
     public void TogglePlayerView(bool active) => PlayerController.TogglePlayerView(active);
     public void ResetPlayer() => PlayerController.ResetPlayer();
+    public bool GetFinishedRace() => PlayerController.GetFinishedRace();
 }

@@ -20,4 +20,5 @@ public enum SoundTypes
     CarEngine,
     CarCrash,
     CarExplosion,
+    Cheer,
 }

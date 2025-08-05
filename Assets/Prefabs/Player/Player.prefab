@@ -529,8 +529,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
-      time: 0.21900019
-      value: 60.505478
+      time: 0.022791237
+      value: 45.080566
       inSlope: -0.9657293
       outSlope: -0.9657293
       tangentMode: 0
@@ -538,8 +538,35 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0.019246545
     - serializedVersion: 3
-      time: 60.139557
-      value: 20.310883
+      time: 19.985537
+      value: 29.995901
+      inSlope: -0.7481688
+      outSlope: -0.7481688
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 40.00674
+      value: 18.005276
+      inSlope: -0.5496119
+      outSlope: -0.5496119
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 59.974007
+      value: 9.783511
+      inSlope: -0.32374415
+      outSlope: -0.32374415
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 80.16112
+      value: 6.019453
       inSlope: 0.054912787
       outSlope: 0.054912787
       tangentMode: 0
@@ -550,6 +577,11 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   wheelRotationSpeed: 10
+  antiRollForce: 6000
+  centerOfMassY: -0.9
+  suspensionSpringStrength: 35000
+  suspensionDamperStrength: 5000
+  rearDownforceMultiplier: 30
   tiltSpeed: 10
   cameraPositionOffset: {x: 0, y: 2, z: -5}
   cameraMoveSmoothness: 10

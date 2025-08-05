@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,6 +14,7 @@ public class UIService : MonoBehaviour
     [SerializeField] private Button helpButton;
     [SerializeField] private Button informationButton;
     [SerializeField] private Button quitButton;
+    [SerializeField] private TextMeshProUGUI bestTimeSM;
 
 
     [Header("Gameplay UI")]
@@ -27,6 +30,21 @@ public class UIService : MonoBehaviour
     [SerializeField] private RectTransform gameoverUI;
     [SerializeField] private Button playButtonGO;
     [SerializeField] private Button exitButtonGO;
+    [SerializeField] private TextMeshProUGUI bestTimeTextGO;
+    [SerializeField] private TextMeshProUGUI timerTextGO;
+
+    [Header("Timer")]
+    [SerializeField] private TextMeshProUGUI timerText;
+    private float timeElapsed;
+    private bool isRunning;
+    private string Best = "best";
+
+    private void Start()
+    {
+        PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
+        ResetTimer();
+    }
 
     private void Awake()
     {
@@ -48,8 +66,13 @@ public class UIService : MonoBehaviour
     private void Update()
     {
         UpdateCurrentUI();
-    }
 
+        if(isRunning)
+        {
+            timeElapsed += Time.deltaTime;
+            timerText.text = FormatTimerText(timeElapsed);
+        }
+    }
     private void UpdateCurrentUI()
     {
         switch (GameService.Instance.GameState)
@@ -58,6 +81,7 @@ public class UIService : MonoBehaviour
                 if (!startMenuUI.gameObject.activeInHierarchy)
                 {
                     GameService.Instance.SoundService.NonBGMAudios(true);
+                    DisplayBestTimeAtStart();
                     DisableAllUIs();
                     startMenuUI.gameObject.SetActive(true);
                     TogglePlayerView(false);
@@ -66,6 +90,15 @@ public class UIService : MonoBehaviour
             case GameState.Gameplay:
                 if (!gameplayUI.gameObject.activeInHierarchy)
                 {
+                    if(gamepausedUI.gameObject.activeInHierarchy)
+                    {
+                        ToggleTimer(true);
+                    }
+                    else
+                    {
+                        ResetTimer();
+                        ToggleTimer(true);
+                    }
                     DisableAllUIs();
                     TogglePlayerView(true);
                     gameplayUI.gameObject.SetActive(true);
@@ -73,15 +106,19 @@ public class UIService : MonoBehaviour
                 UpdateHealthBarUI();
                 break;
             case GameState.Gamepaused:
+                ToggleTimer(false);
                 DisableAllUIs();
                 gamepausedUI.gameObject.SetActive(true);
                 break;
             case GameState.Gameover:
                 if (!gameoverUI.gameObject.activeInHierarchy)
                 {
+                    ToggleTimer(false);
                     GameService.Instance.SoundService.NonBGMAudios(true);
                     DisableAllUIs();
                     TogglePlayerView(false);
+                    SaveBestTime();
+                    DisplayBestTime();
                     gameoverUI.gameObject.SetActive(true);
                 }
                 break;
@@ -101,6 +138,7 @@ public class UIService : MonoBehaviour
         GameService.Instance.SoundService.StartCarEngine();
         Invoke(nameof(StartEngineLoop), delay - 0.5f);
     }
+    private bool HasFinishedRace() => GameService.Instance.PlayerService.GetFinishedRace();
 
     #region Start UI
     private void onPlayButtonClickedSM()
@@ -141,6 +179,7 @@ public class UIService : MonoBehaviour
             mainmenuUI.gameObject.SetActive(true);
         }
     }
+    private void DisplayBestTimeAtStart() => bestTimeSM.text = FormatTimerText(GetBestTime());
 #endregion
 
     #region Gameplay UI
@@ -176,6 +215,77 @@ public class UIService : MonoBehaviour
         GameService.Instance.SetGameState(GameState.Gameplay);
 
         StartCarEngine();
+    }
+    private void DisplayBestTime()
+    {
+        float bestTime = GetBestTime();
+
+        if(bestTime > 0 && timeElapsed < GetBestTime())
+        {
+            bestTimeTextGO.text = "New Best Time";
+        }
+        else
+        {
+            bestTimeTextGO.text = "Best Time";
+        }
+        timerTextGO.text = FormatTimerText(bestTime);
+    }
+    #endregion
+
+    #region Timer
+    private void ToggleTimer(bool toggle) => isRunning = toggle;
+    private string FormatTimerText(float time)
+    {
+        int hours = Mathf.FloorToInt(time / 3600);
+        int minutes = Mathf.FloorToInt((time % 3600) / 60);
+        int seconds = Mathf.FloorToInt(time % 60);
+
+        if(hours > 0)
+        {
+            return $"{hours:00}:{minutes:00}:{seconds:00}";
+        }
+        else
+        {
+            return $"{minutes:00}:{seconds:00}";
+        }
+    }
+    private void ResetTimer()
+    {
+        timeElapsed = 0;
+        timerText.text = FormatTimerText(timeElapsed);
+    }
+    private void SaveBestTime()
+    {
+        float bestTime = GetBestTime();
+
+        if(HasFinishedRace() && FinishedLapAlive())
+        {
+            PlayCheer();
+            if (IsNewBestTime())
+            {
+                PlayerPrefs.SetFloat(Best, timeElapsed);
+                PlayerPrefs.Save();
+            }
+        }
+    }
+    private float GetBestTime()
+    {
+        return PlayerPrefs.HasKey(Best) ? PlayerPrefs.GetFloat(Best) : 0f;
+    }
+    private bool FinishedLapAlive() => GameService.Instance.PlayerService.GetCurrentHealth() > 0;
+    private bool IsNewBestTime()
+    {
+        float time = GetBestTime();
+
+        return time > 0 ? timeElapsed < time : true;
+        //return time <= 0 || timeElapsed < time;
+    }
+    private void PlayCheer()
+    {
+        if (FinishedLapAlive())
+        {
+            GameService.Instance.SoundService.PlaySFXMusic(SoundTypes.Cheer);
+        }
     }
     #endregion
 }
