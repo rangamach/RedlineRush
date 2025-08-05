@@ -1,5 +1,3 @@
-using UnityEngine;
-
 public class PlayerService
 {
     public PlayerController PlayerController { get; private set; }
